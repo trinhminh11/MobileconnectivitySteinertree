@@ -17,8 +17,8 @@ def addRelayNode(p1: ToaDo, p2: ToaDo, radius, tapRN: list[ToaDo]):
 
 def getSteinerPoint(p1: ToaDo, p2: ToaDo, p3: ToaDo):
 	w = getDist(p1, p2)
-	u = getDist(p2, p3)
 	v = getDist(p1, p3)
+	u = getDist(p2, p3)
 
 	p = (u + v + w) / 2
 	S = ( p * (p-u) * (p-v) * (p-w) ) ** .5
@@ -42,6 +42,7 @@ def getSteinerPoint(p1: ToaDo, p2: ToaDo, p3: ToaDo):
 
 	return ToaDo(sx, sy)
 
+
 def setSteinerPoint(p1: ToaDo, p2: ToaDo, p3: ToaDo, radius, tapRN: list[ToaDo]):
 	s = getSteinerPoint(p1, p2, p3)
 
@@ -62,8 +63,9 @@ def numOfRelayByMST(p1: ToaDo, p2: ToaDo, p3: ToaDo, radius):
 		for j in range(i+1, 4):
 			if dst[i] > dst[j]:
 				dst[i], dst[j] = dst[j], dst[i]
+
 	
-	return ceil(dst[1]//radius) + ceil(dst[2]/radius)
+	return ceil(dst[1]/radius) + ceil(dst[2]/radius)
 
 def numOfRelayBySMT(p1: ToaDo, p2: ToaDo, p3: ToaDo, radius):
 	s = getSteinerPoint(p1, p2, p3)
@@ -76,3 +78,4 @@ def numOfRelayBySMT(p1: ToaDo, p2: ToaDo, p3: ToaDo, radius):
 
 def gain(p1, p2, p3, radius):
 	return numOfRelayByMST(p1, p2, p3, radius) - numOfRelayBySMT(p1, p2, p3, radius)
+

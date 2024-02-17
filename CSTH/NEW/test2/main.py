@@ -262,22 +262,21 @@ class Main:
 
 	def steiner(self):
 		self.numIter = 0
-		n = len(self.tapSensor)
 
 		self.radius = self.radius/2
 
 		print("R =", self.radius)
 
-		self.root = [i for i in range(n)]
+		self.root = [i for i in range(len(self.tapSensor))]
 
-		
+		self.fw.write("start\n")
 		while True:
 			maxGain = -1
 			uSaved = -1
 			iSaved = -1
 			vSaved = -1
 
-			for i in range(n):
+			for i in range(len(self.tapSensor)):
 				for iu in range(len(self.tapAdj[i].tapDinhKe)):
 					for iv in range(iu+1, len(self.tapAdj[i].tapDinhKe)):
 						u = self.tapAdj[i].tapDinhKe[iu]
@@ -287,7 +286,9 @@ class Main:
 						p2 = self.tapSensor[u]
 						p3 = self.tapSensor[v]
 
+
 						gain = ToaDoMethod.gain(p1, p2, p3, self.radius)
+
 
 						if gain > 0 and gain > maxGain:
 							maxGain = gain
@@ -302,9 +303,10 @@ class Main:
 				p3 = self.tapSensor[vSaved]
 
 				self.tapSensor.append(ToaDoMethod.getSteinerPoint(p1, p2, p3))
-				stp = len(self.tapSensor()) - 1
+				stp = len(self.tapSensor) - 1
 
-				self.tapAdj[stp] = Adjacent()
+
+				self.tapAdj.append(Adjacent())
 
 				ss = Sensor(self.tapSensor[stp], self.radius)
 				self.fw.write(ss.toCircle() + "\n")
@@ -333,12 +335,14 @@ class Main:
 				break 
 		
 		self.radius *= 2
-		for i in range(n):
+		for i in range(len(self.tapSensor)):
 			for j in self.tapAdj[i].tapDinhKe:
 				if i < j:
 					self.addRelay(self.tapSensor[i], self.tapSensor[j])
 		
 		self.radius /= 2
+
+
 
 	def xuat(self):
 		print("Number iter of Steiner =", self.numIter)
@@ -414,6 +418,7 @@ class Main:
 
 def main():
 	for i in range(1, 19):
+	# for i in range(17, 18):
 		print("Test-Case:", i)
 		x = Main()
 		path = 	"/home/fool/Documents/code/Lab/MobileconnectivitySteinertree/CSTH/NEW/test2/Testmip/Test" + str(i)
@@ -425,8 +430,11 @@ def main():
 		x.bapPhu()
 
 
+
 		x.kruskal()
+
 		x.steiner()
+
 		x.redudantRelay()
 
 		x.fw.close()

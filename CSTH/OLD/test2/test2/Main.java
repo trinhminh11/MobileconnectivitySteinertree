@@ -337,7 +337,10 @@ class Main {
 	        ToaDo p1 = tapSensor.get(i);
 	        ToaDo p2 = tapSensor.get(u);
 	        ToaDo p3 = tapSensor.get(v);
+
+
 	        double gain = ToaDoMethod.gain(p1, p2, p3, radius);
+
 	        if ((gain > 0) && (gain > maxGain) ) {
 	          maxGain = gain;
 	          iSaved = i;
@@ -477,7 +480,7 @@ class Main {
 		Locale lc = new Locale("en", "UN");
 		Locale.setDefault(lc);
 		for(int i=1; i<=18; i++) {
-		// for(int i=1; i<=1; i++) {
+		// for(int i=17; i<=17; i++) {
 				System.out.println("Test-Case: " +i);
 			 Main x = new Main();
 			 String path = "/home/fool/Documents/code/Lab/MobileconnectivitySteinertree/CSTH/OLD/test2/Testmip/Test";
