@@ -269,7 +269,6 @@ class Main:
 
 		self.root = [i for i in range(len(self.tapSensor))]
 
-		self.fw.write("start\n")
 		while True:
 			maxGain = -1
 			uSaved = -1
