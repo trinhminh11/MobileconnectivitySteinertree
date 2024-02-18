@@ -1,7 +1,7 @@
 class ToaDo:
 	EPS = 10e-9
 	def __init__(self, *args) -> None:
-		x, y, chuKy = 0, 0, -1
+		self.x, self.y, self.chuKy = 0, 0, -1
 
 		if len(args) == 1:
 			other = args[0]
