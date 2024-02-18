@@ -1,0 +1,126 @@
+Test-Case: 1
+Nhap
+R = 30.0
+410 relay added
+Time =: 0.10231390500121051
+Number iter of Steiner = 2
+-------------------
+Test-Case: 2
+Nhap
+R = 30.0
+445 relay added
+Time =: 0.2206281239996315
+Number iter of Steiner = 0
+-------------------
+Test-Case: 3
+Nhap
+R = 30.0
+477 relay added
+Time =: 0.3871989749968634
+Number iter of Steiner = 0
+-------------------
+Test-Case: 4
+Nhap
+R = 30.0
+499 relay added
+Time =: 0.8582482860001619
+Number iter of Steiner = 1
+-------------------
+Test-Case: 5
+Nhap
+R = 30.0
+529 relay added
+Time =: 1.3171426820008492
+Number iter of Steiner = 0
+-------------------
+Test-Case: 6
+Nhap
+R = 30.0
+570 relay added
+Time =: 1.986814976997266
+Number iter of Steiner = 1
+-------------------
+Test-Case: 7
+Nhap
+R = 30.0
+577 relay added
+Time =: 2.7981257059982454
+Number iter of Steiner = 1
+-------------------
+Test-Case: 8
+Nhap
+R = 30.0
+580 relay added
+Time =: 3.8821131579970825
+Number iter of Steiner = 0
+-------------------
+Test-Case: 9
+Nhap
+R = 30.0
+586 relay added
+Time =: 5.197002165001322
+Number iter of Steiner = 1
+-------------------
+Test-Case: 10
+Nhap
+R = 30.0
+615 relay added
+Time =: 6.788535116000276
+Number iter of Steiner = 0
+-------------------
+Test-Case: 11
+Nhap
+R = 30.0
+625 relay added
+Time =: 8.88401075299771
+Number iter of Steiner = 0
+-------------------
+Test-Case: 12
+Nhap
+R = 10.0
+3251 relay added
+Time =: 1.4210430720013392
+Number iter of Steiner = 9
+-------------------
+Test-Case: 13
+Nhap
+R = 15.0
+1682 relay added
+Time =: 1.9247003209966351
+Number iter of Steiner = 2
+-------------------
+Test-Case: 14
+Nhap
+R = 20.0
+1076 relay added
+Time =: 2.7675467989975004
+Number iter of Steiner = 1
+-------------------
+Test-Case: 15
+Nhap
+R = 25.0
+804 relay added
+Time =: 4.144200761998945
+Number iter of Steiner = 1
+-------------------
+Test-Case: 16
+Nhap
+R = 30.0
+603 relay added
+Time =: 5.308648837999499
+Number iter of Steiner = 1
+-------------------
+Test-Case: 17
+Nhap
+R = 35.0
+467 relay added
+Time =: 7.104573300999618
+Number iter of Steiner = 0
+-------------------
+Test-Case: 18
+Nhap
+R = 40.0
+365 relay added
+Time =: 7.6508212049993745
+Number iter of Steiner = 1
+-------------------

@@ -3,7 +3,8 @@ import pack1.ToaDoMethod as ToaDoMethod
 import os
 import timeit
 
-cwd = os.getcwd()
+cur_path = os.path.dirname(__file__)
+
 
 
 class Main:
@@ -420,11 +421,11 @@ class Main:
 
 
 def main():
-	for i in range(12, 19):
+	for i in range(1, 19):
 		print("Test-Case:", i)
 		x = Main()
-		path = cwd + "/Testnew/" + str(i)
-		x.nhapDuLieu(path+".inp", cwd + "/CSTH/Testnew/" + str(i) + ".out")
+		path = cur_path + "/Testnew/" + str(i)
+		x.nhapDuLieu(path+".inp", path+".out")
 		starttime = timeit.default_timer()
 
 		x.inDuLieu()
@@ -437,7 +438,7 @@ def main():
 
 		x.steiner()
 
-		x.redudantRelay()
+		# x.redudantRelay()
 
 		x.fw.close()
 
