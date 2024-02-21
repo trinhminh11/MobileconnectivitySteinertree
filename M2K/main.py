@@ -1,164 +1,144 @@
 from pack1 import *
-import pack1.SteinerCalculator as SteinerCalculator
+import pack1.Method as Method
 import random
 import timeit
 import os
 
 cur_path = os.path.dirname(__file__)
 
+def import_data(inp):
+	PointSet = []
+
+	with open(inp, 'r') as f:
+
+		W, L = map(int, f.readline().split())
+
+		base = Point(*map(int, f.readline().split()))
+
+		carNum = int(f.readline())
+
+		R = float(f.readline())
+
+		periodCount = int(f.readline())
+
+
+		n = carNum * periodCount
+
+
+		k = int(periodCount * 16 / (R * R))
+		
+		if k > n:
+			k = int(n/2)
+		
+		k = max(k, 1)
+
+		for i in range(n):
+			PointSet.append(Point(*map(float, f.readline().split())))
+		
+		PointSet.append(base)
+	
+	return W, L, R, PointSet, k
+
+
 class Main:
-	N_MAX = 2000
-	INVALID = -1
-	def __init__(self) -> None:
-		self.addedPoint: list[ToaDo] = []
-		self.tapSpanning: list[CanhNoi] = []
-		self.tapSensor: list[ToaDo] = []
-		self.mt = SteinerCalculator
+	def __init__(self, W, L, R, PointSet, k) -> None:
+		self.W = W
+		self.L = L
+		self.R = R
+		self.PointSet: list[Point] = PointSet[:-1]
+		self.base = PointSet[-1]
+		self.n = len(self.PointSet)
 
-		self.base: ToaDo = None
-		self.width = self.length = self.carCount = self.periodCount = 0
+		self.k = k
 
-		self.tapCanh: list[CanhNoi] = []
+		self.addedPoint: list[Point] = []
+		self.SpanningSet: list[list[int]] = []
+		self.SensorSet: list[Point] = []
+		self.mt = Method
 
-		self.tapCanhCount = 0
-		self.root = []
-		self.R = 0
-		self.n = self.k = 0
 
-		self.tapDiem: list[ToaDo] = []
-		self.tapCluster: list[Cluster] = []
-		self.newCluster = [0] * self.N_MAX
-		self.oldCluster = [0] * self.N_MAX
+		self.EdgeSet: list[list[int]] = []
+
+		self.ClusterSet: list[Cluster] = []
 	
-	def nhapDuLieu(self, inp):
-		with open(inp, 'r') as f:
+	def randomCluster(self):
+		lst = [i for i in range(self.n)]
 
-			self.W, self.L = map(int, f.readline().split())
+		random.shuffle(lst)
 
-			self.base = ToaDo(*map(int, f.readline().split()))
-
-			self.carNum = int(f.readline())
-
-			self.R = float(f.readline())
-
-			self.periodCount = int(f.readline())
-
-
-			self.n = self.carNum * self.periodCount
-
-
-			self.k = int(self.periodCount * 16 / (self.R * self.R))
-
-			
-			if self.k > self.n:
-				self.k = int(self.n/2)
-			
-			self.k = max(self.k, 1)
-			
-
-			for i in range(self.n):
-				self.tapDiem.append(ToaDo(*map(float, f.readline().split())))
-			
-
-	def inDuLieu(self, out):
-		with open(out, "w") as f:
-			for diem in self.tapDiem:
-				f.write(diem.toDecimalString() + "\n")
-
-			f.write(self.base.toDecimalString() + "\n\n")
-
-			for diem in self.addedPoint:
-				f.write(diem.toCircle(self.R) + "\n")
-		
-		print(len(self.addedPoint), "points added")
-
-
-	def randomCum(self):
-		numMax = self.n-1
-		numMin = 0
-
-		duocChon = [False] * self.n
-
-		for i in range(self.k):
-			while True:
-				numRan = random.randint(numMin, numMax)
-				if not duocChon[numRan]:
-					break
-
-			duocChon[numRan] = True
-
-			self.tapCluster.append(Cluster(self.tapDiem[numRan]))
+		for numRan in lst[:self.k]:
+			self.ClusterSet.append(Cluster(self.PointSet[numRan]))
 		
 	
-	def newSameOld(self):
-		for i in range(self.n):
-			if self.oldCluster[i] != self.newCluster[i]:
-				return False
-		
-		return True
+	def Clustering(self):
+		oldCluster = [None] * self.n
+		newCluster = [None] * self.n
 
-	def phanCum(self):
-		done = False
-		for i in range(self.n):
-			self.oldCluster[i] = self.INVALID
-		
-		while not done:
+		def compareOldNew():
 			for i in range(self.n):
-				kCachMin = self.tapDiem[i].khoangCach(self.tapCluster[0].getCentroid())
+				if oldCluster[i] != newCluster[i]:
+					return False
+			return True
+		
+		while True:
+			for i in range(self.n):
+				MinDist = self.PointSet[i].dist(self.ClusterSet[0].getCentroid())
 				indexOfCluster = 0
 
 				for j in range(1, self.k):
-					kCach = self.tapDiem[i].khoangCach(self.tapCluster[j].getCentroid())
-					if (kCach < kCachMin):
-						kCachMin = kCach
+					dst = self.PointSet[i].dist(self.ClusterSet[j].getCentroid())
+					if (dst < MinDist):
+						MinDist = dst
 						indexOfCluster = j
 				
-				self.tapCluster[indexOfCluster].add(self.tapDiem[i])
-				self.newCluster[i] = indexOfCluster
+				self.ClusterSet[indexOfCluster].add(self.PointSet[i])
+				newCluster[i] = indexOfCluster
 			
-			if self.newSameOld():
-				done = True
+			if compareOldNew():
 				break
 
 			for i in range(self.n):
-				self.oldCluster[i] = self.newCluster[i]
+				oldCluster[i] = newCluster[i]
 			
 			for i in range(self.k):
-				self.tapCluster[i] = Cluster(self.tapCluster[i].center())
+				self.ClusterSet[i] = Cluster(self.ClusterSet[i].center())
 		
-	def addPoint(self, d1: ToaDo, d2: ToaDo):
-		if d1.khoangCach(d2) <= 2 * self.R:
+	def addPoint(self, d1: Point, d2: Point):
+		if d1.dist(d2) <= 2 * self.R:
 			return
 		
-		d3 = ToaDo(0, 0)
-		kCach = d1.khoangCach(d2)
-		deltaX = 2*self.R* abs(d2.getX() - d1.getX())/kCach;
-		deltaY = 2*self.R* abs(d2.getY() - d1.getY())/kCach;
-		if d1.getX() < d2.getX():
-			d3.setX(d1.getX() + deltaX)
+		d3 = Point(0, 0)
+		dst = d1.dist(d2)
+
+		deltaX = 2*self.R* abs(d2.x - d1.x)/dst
+		deltaY = 2*self.R* abs(d2.y - d1.y)/dst
+
+		if d1.x < d2.x:
+			d3.x = (d1.x + deltaX)
 		else:
-			d3.setX(d1.getX() - deltaX)
-		if d1.getY() < d2.getY():
-			d3.setY(d1.getY() + deltaY)
+			d3.x = (d1.x - deltaX)
+			
+		if d1.y < d2.y:
+			d3.y = (d1.y + deltaY)
 		else:
-			d3.setY(d1.getY() - deltaY)
+			d3.y = (d1.y - deltaY)
 			
 		self.addedPoint.append(d3)
 		self.addPoint(d3,d2)
 	
 	def addPointOfCluster(self):
-		pointOfThisCluster: list[ToaDo] = []
+		pointOfThisCluster: list[Point] = []
 		toAddedPointMin = []
 		idAddedPoint = []
 		connected = []
 
 		for clus in range(self.k):
-			pointOfThisCluster = self.tapCluster[clus].returnList()
+			pointOfThisCluster = self.ClusterSet[clus].returnList()
 			pointcount = len(pointOfThisCluster)
-			centroid = self.tapCluster[clus].getCentroid()
+			centroid = self.ClusterSet[clus].getCentroid()
 			self.addedPoint.append(centroid)
 
-			toAddedPointMin = [pointOfThisCluster[i].khoangCach(centroid) for i in range(pointcount)]
+			toAddedPointMin = [pointOfThisCluster[i].dist(centroid) for i in range(pointcount)]
 			connected = [False] * pointcount
 			idAddedPoint = [len(self.addedPoint) - 1] * pointcount
 			connectedCount = 0
@@ -190,161 +170,164 @@ class Main:
 							point = pointOfThisCluster[i]
 							plusPoint = self.addedPoint[j]
 
-							if point.khoangCach(plusPoint) < toAddedPointMin[i]:
-								toAddedPointMin[i] = point.khoangCach(plusPoint)
+							if point.dist(plusPoint) < toAddedPointMin[i]:
+								toAddedPointMin[i] = point.dist(plusPoint)
 								idAddedPoint[i] = j
 
-	def sortTapCanh(self):
-		self.tapCanh.sort(key= lambda x: x.getLength())
-	
-	def getRoot(self, x):
-		if self.root[x] == x:
-			return x
-		else:
-			self.root[x] = self.getRoot(self.root[x])
-			return self.root[x]
-	
-	def buildCayKhung(self):
-		self.root = [i for i in range(self.k+1)]
+	def Kruskal(self):
+		self.EdgeSet.sort(key= lambda x: x[2])
 
-		for i in range(self.tapCanhCount):
-			idA = self.tapCanh[i].id1
-			idB = self.tapCanh[i].id2
-			p = self.getRoot(idA)
-			q = self.getRoot(idB)
+		root = [i for i in range(self.k+1)]
+
+		def getRoot(x):
+			if root[x] == x:
+				return x
+			else:
+				root[x] = getRoot(root[x])
+				return root[x]
+
+		for i in range(self.EdgeCount):
+			idA = self.EdgeSet[i][0]
+			idB = self.EdgeSet[i][1]
+			p = getRoot(idA)
+			q = getRoot(idB)
+
 			if p == q:
 				continue
-			self.root[p] = q
-
-			if idA < self.k:
-				p1 = self.tapCluster[idA].getCentroid()
-			else:
-				p1 = self.base
 			
-			if idB < self.k:
-				p2 = self.tapCluster[idB].getCentroid()
-			else:
-				p2 = self.base
+			root[p] = q
 			
-			self.tapSpanning.append(CanhNoi(idA, idB, 0))
+			self.SpanningSet.append([idA, idB, 0])
 	
 
-	def steinerTree(self):
+	def SteinerTree(self):
 
 		for i in range(self.k):
-			self.tapSensor.append(self.tapCluster[i].getCentroid())
+			self.SensorSet.append(self.ClusterSet[i].getCentroid())
 		
-		self.tapSensor.append(self.base)
+		self.SensorSet.append(self.base)
 
-		d1 = d2 = d3 = 0
+		deleted = [False] * len(self.SpanningSet)
 
-
-		e1 = CanhNoi(0, 0, 0)
-		e2 = CanhNoi(0, 0, 0)
-
-		for i in range(len(self.tapSpanning)):
-			if self.tapSpanning[i].isXoa:
+		for i in range(len(self.SpanningSet)):
+			if deleted[i]:
 				continue
 
-			idCanh = -1
+			idChoosed = -1
 			alphaMax = float('-inf')
 
-			for j in range(len(self.tapSpanning)):
-				if i == j or self.tapSpanning[j].isXoa:
+			for j in range(len(self.SpanningSet)):
+				if i == j or deleted[j]:
 					continue
 
-				giaoNhau = False
-				e1 = self.tapSpanning[i]
-				e2 = self.tapSpanning[j]
+				isIntersects = False
+				e1 = self.SpanningSet[i]
+				e2 = self.SpanningSet[j]
 
-				if e1.id1 == e2.id1:
-					d1 = e1.id2
-					d3 = e2.id2
-					d2 = e1.id1
-					giaoNhau = True
-				if e1.id2 == e2.id2:
-					d1 = e1.id1
-					d3 = e2.id1
-					d2 = e1.id2
-					giaoNhau = True
+				if e1[0] == e2[0]:
+					d1 = e1[1]
+					d3 = e2[1]
+					d2 = e1[0]
+					isIntersects = True
+				if e1[1] == e2[1]:
+					d1 = e1[0]
+					d3 = e2[0]
+					d2 = e1[1]
+					isIntersects = True
 				
-				if (e1.id1 == e2.id2):
-					d1 = e1.id2 
-					d3 = e2.id1 
-					d2 = e1.id1 
-					giaoNhau = True
-				if (e1.id2 == e2.id1):
-					d1 = e1.id1 
-					d3 = e2.id2 
-					d2 = e1.id2 
-					giaoNhau = True
+				if e1[0] == e2[1]:
+					d1 = e1[1] 
+					d3 = e2[0] 
+					d2 = e1[0] 
+					isIntersects = True
+
+				if e1[1] == e2[0]:
+					d1 = e1[0] 
+					d3 = e2[1] 
+					d2 = e1[1] 
+					isIntersects = True
 				
-				if not giaoNhau:
+				if not isIntersects:
 					continue
 
-				alpha = self.mt.cosGocGiua(self.tapSensor[d1], self.tapSensor[d2], self.tapSensor[d3])
+				alpha = self.mt.cos(self.SensorSet[d1], self.SensorSet[d2], self.SensorSet[d3])
 
 				if alpha > alphaMax:
 					alphaMax = alpha
-					idCanh = j
-					d1Choosed = self.tapSensor[d1]
-					d2Choosed = self.tapSensor[d2]
-					d3Choosed = self.tapSensor[d3]
-					id1 = d1
-					id2 = d2
-					id3 = d3
+					idChoosed = j
 
-			if idCanh == -1:
+			if idChoosed == -1:
 				continue
 
-			e2 = self.tapSpanning[idCanh]
-
+			e2 = self.SpanningSet[idChoosed]
 		
-		for e in self.tapSpanning:
-			if not e.isXoa:
-				self.addPoint(self.tapSensor[e.id1], self.tapSensor[e.id2])
+		for i, e in enumerate(self.SpanningSet):
+			if not deleted[i]:
+				self.addPoint(self.SensorSet[e[0]], self.SensorSet[e[1]])
+		
 
 	def connectCluster(self):
 		for i in range(self.k+1):
 			for j in range(i+1, self.k+1):
 				if i < self.k:
-					p1 = self.tapCluster[i].getCentroid()
+					p1 = self.ClusterSet[i].getCentroid()
 				else:
 					p1 = self.base
 				
 				if j < self.k:
-					p2 = self.tapCluster[j].getCentroid()
+					p2 = self.ClusterSet[j].getCentroid()
 				else:
 					p2 = self.base
 				
-				
-				self.tapCanh.append(CanhNoi(i, j, p1.khoangCach(p2)))
+				self.EdgeSet.append([i, j, p1.dist(p2)])
 		
-		self.tapCanhCount = len(self.tapCanh)
+		self.EdgeCount = len(self.EdgeSet)
 
-		self.sortTapCanh()
+	
+	def solve(self):
+		self.randomCluster()
 
-		self.buildCayKhung()
+		self.Clustering()
 
-		self.steinerTree()
+		self.addPointOfCluster()
+
+		self.connectCluster()
+
+		self.Kruskal()
+
+		self.SteinerTree()
+	
+	def export_data(self, out):
+		with open(out, "w") as f:
+			for diem in self.PointSet:
+				f.write(diem.toDecimalString() + "\n")
+
+			f.write(self.base.toDecimalString() + "\n\n")
+
+			for diem in self.addedPoint:
+				f.write(diem.toCircle(self.R) + "\n")
 
 
 def main():
 	for i in range(1, 19):
 		print("Test-Case:", i)
-		x = Main()
 
-		starttime = timeit.default_timer()
 
 		path = cur_path + "/Testnew/" + str(i)
 
-		x.nhapDuLieu(path + ".inp")
-		x.randomCum()
-		x.phanCum()
-		x.addPointOfCluster()
-		x.connectCluster()
-		x.inDuLieu(path + ".out")
+		W, L, R, Ps, k = import_data(path + ".inp")
+
+		solver = Main(W, L, R, Ps, k)
+
+		starttime = timeit.default_timer()
+
+		solver.solve()
+
 		endtime = timeit.default_timer()
+
+		solver.export_data(path + ".out")
+
+		print("ADDED =", len(solver.addedPoint))
 
 		print("time =", endtime - starttime)
 

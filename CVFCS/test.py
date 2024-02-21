@@ -1,285 +1,282 @@
 from pack1 import *
-import pack1.ToaDoMethod as ToaDoMethod
+import pack1.Method as Method
 import os
 import timeit
 
 cur_path = os.path.dirname(__file__)
 
-class Main:
+def import_data(inp):
+	SensorSet = []
+	with open(inp, 'r') as f:
+
+		W, L = map(int, f.readline().split())
+
+		BASE = Point(*map(int, f.readline().split()))
+
+		carNum = int(f.readline())
+
+		R = float(f.readline())
+
+		periodNum = int(f.readline())
+
+
+		for i in range(carNum):
+			for j in range(periodNum):
+				SensorSet.append(Point(*map(float, f.readline().split()), j))
+		
+		SensorSet.append(BASE)
+
+	return W, L, R, SensorSet
+
+class Solver:
 	N_MAX = 5007
-	BASE = None
-	def __init__(self) -> None:
-		self.mt = ToaDoMethod
-		self.tapSensor: list[ToaDo] = []
-		self.tapRelay: list[ToaDo] = []
-		self.tapEdge: list[Edge] = []
-		self.tapSpanning: list[Edge] = []
-		self.tapSteiner: list[Edge] = []
+	def __init__(self, W, L, R, SensorSet) -> None:
+		self.W = W
+		self.L = L
+		self.R = R
+		self.n = len(SensorSet)
+		self.SensorSet: list[Point] = SensorSet
+		self.RelaySet: list[Point] = []
+		self.EdgeSet: list[Edge] = []
+		self.SteinerSet: list[Edge] = []
+
+	def Kruskal(self):
+		root = [i for i in range(self.n)]
+		Edges = []
+
+		def getRoot(x):
+			if root[x] == x:
+				return x
+			else:
+				root[x] = getRoot(root[x])
+				return root[x]
 		
-		self.W, self.L = 0, 0
-		self.BASE: ToaDo = None
-		self.carNum, self.periodNum, self.toaDoNum = 0, 0, 0
-		self.R = 0
-		self.root = []
-		self.adj: list[DanhSachDinhKe] = []
-		self.visited = [False] * self.N_MAX
-		self.truyVet = [0] * self.N_MAX
-	
-	def print(self, s):
-		print(s)
+		for i in range(self.n):
+			for j in range(i+1, self.n):
+				p1 = self.SensorSet[i]	
+				p2 = self.SensorSet[j]	
 
-	def docFile(self, inp):
-		with open(inp, 'r') as f:
-
-			self.W, self.L = map(int, f.readline().split())
-
-			
-			self.BASE = ToaDo(*map(int, f.readline().split()))
-
-			carNum = int(f.readline())
-
-			self.R = float(f.readline())
-
-			periodNum = int(f.readline())
-
-			self.toaDoNum = carNum * periodNum
-
-			for i in range(carNum):
-				for j in range(periodNum):
-					self.tapSensor.append(ToaDo(*map(float, f.readline().split()), j))
-			
-			self.tapSensor.append(self.BASE)
-
-			self.toaDoNum += 1
-
-	def sortEdge(self):
-		self.tapEdge.sort(key= lambda x: x.doDai)
-	
-	def getRoot(self, x):
-		if self.root[x] == x:
-			return x
-		else:
-			self.root[x] = self.getRoot(self.root[x])
-			return self.root[x]
-	
-	def addRelay(self, d1: ToaDo, d2: ToaDo):
-		R = self.R
-
-		if d1.khoangCach(d2) <= 2 * R:
-			return
-		d3 = ToaDo(0, 0)
-		kCach = d1.khoangCach(d2)
-		deltaX = 2*R* abs(d2.getX() - d1.getX())/kCach;
-		deltaY = 2*R* abs(d2.getY() - d1.getY())/kCach;
-		if d1.getX() < d2.getX():
-			d3.setX(d1.getX() + deltaX)
-		else:
-			d3.setX(d1.getX() - deltaX)
-		if d1.getY() < d2.getY():
-			d3.setY(d1.getY() + deltaY)
-		else:
-			d3.setY(d1.getY() - deltaY)
-		self.tapRelay.append(d3)
-		self.addRelay(d3,d2)
-
-	def spanningTree(self):
-		for i in range(len(self.tapSensor)):
-			for j in range(i+1, len(self.tapSensor)):
-				p1 = self.tapSensor[i]	
-				p2 = self.tapSensor[j]	
-
-				self.tapEdge.append(Edge(i, j, p1, p2, p1.khoangCach(p2)))
+				Edges.append([i, j, p1.dist(p2)])
 		
-		self.sortEdge()
-	
-		self.root = [i for i in range(self.toaDoNum)]
+		Edges.sort(key=lambda x: x[2])
+		
+		for e in Edges:
+			idA = e[0]
+			idB = e[1]
 
-		for e in self.tapEdge:
-			idA = e.id1
-			idB = e.id2
-
-			p = self.getRoot(idA)
-			q = self.getRoot(idB)
+			p = getRoot(idA)
+			q = getRoot(idB)
 			if p == q:
 				continue
 
-			self.root[p] = q
-			self.tapSpanning.append(e)
-		
+			root[p] = q
 
-	def steinerTree(self):
+			self.EdgeSet.append(e[:-1])
+	
+	def addRelay(self, d1: Point, d2: Point):
+		R = self.R
+
+		if d1.dist(d2) <= 2 * R:
+			return
+		
+		d3 = Point(0, 0)
+
+		dst = d1.dist(d2)
+		deltaX = 2*R* abs(d2.x - d1.x)/dst;
+		deltaY = 2*R* abs(d2.y - d1.y)/dst;
+		if d1.x < d2.x:
+			d3.x = (d1.x + deltaX)
+		else:
+			d3.x = (d1.x - deltaX)
+		if d1.y < d2.y:
+			d3.y = (d1.y + deltaY)
+		else:
+			d3.y = (d1.y - deltaY)
+
+		self.RelaySet.append(d3)
+		self.addRelay(d3, d2)
+
+	def SteinerTree(self):
 		d1 = d2 = d3 = 0
 		id1 = id2 = id3 = idSteiner = 0
 
-		d1Choosed = ToaDo(0, 0)
-		d2Choosed = ToaDo(0, 0)
-		d3Choosed = ToaDo(0, 0)
+		d1Choosed = Point(0, 0)
+		d2Choosed = Point(0, 0)
+		d3Choosed = Point(0, 0)
 
-		e1 = Edge(0, 0, d1Choosed, d1Choosed, 0)
-		e2 = Edge(0, 0, d1Choosed, d1Choosed, 0)
+		e1 = [0, 0, 0]
+		e2 = [0, 0, 0]
 
-		for i in range(len(self.tapSpanning)):
-			if self.tapSpanning[i].isXoa:
+		deleted = [False] * len(self.EdgeSet)
+
+		for i in range(len(self.EdgeSet)):
+			if deleted[i]:
 				continue
 
-			idCanh = -1
+			idChoosed = -1
 			alphaMax = float('-inf')
 
-			for j in range(len(self.tapSpanning)):
-				if i == j or self.tapSpanning[j].isXoa:
+			for j in range(len(self.EdgeSet)):
+				if i == j or deleted[j]:
 					continue
 
-				giaoNhau = False
-				e1 = self.tapSpanning[i]
-				e2 = self.tapSpanning[j]
+				isIntersect = False
+				e1 = self.EdgeSet[i]
+				e2 = self.EdgeSet[j]
 
-				if e1.id1 == e2.id1:
-					d1 = e1.id2
-					d3 = e2.id2
-					d2 = e1.id1
-					giaoNhau = True
-				if e1.id2 == e2.id2:
-					d1 = e1.id1
-					d3 = e2.id1
-					d2 = e1.id2
-					giaoNhau = True
+				if e1[0] == e2[0]:
+					d1 = e1[1]
+					d2 = e1[0]
+					d3 = e2[1]
+					isIntersect = True
+
+				if e1[1] == e2[1]:
+					d1 = e1[0]
+					d2 = e1[1]
+					d3 = e2[0]
+					isIntersect = True
 				
-				if (e1.id1 == e2.id2):
-					d1 = e1.id2 
-					d3 = e2.id1 
-					d2 = e1.id1 
-					giaoNhau = True
-				if (e1.id2 == e2.id1):
-					d1 = e1.id1 
-					d3 = e2.id2 
-					d2 = e1.id2 
-					giaoNhau = True
+				if (e1[0] == e2[1]):
+					d1 = e1[1] 
+					d2 = e1[0] 
+					d3 = e2[0] 
+					isIntersect = True
+
+				if (e1[1] == e2[0]):
+					d1 = e1[0] 
+					d2 = e1[1] 
+					d3 = e2[1] 
+					isIntersect = True
 				
-				if not giaoNhau:
+				if not isIntersect:
 					continue
 
-				alpha = self.mt.cosGocGiua(self.tapSensor[d1], self.tapSensor[d2], self.tapSensor[d3])
+				alpha = Method.cos(self.SensorSet[d1], self.SensorSet[d2], self.SensorSet[d3])
 
 				if alpha > alphaMax:
 					alphaMax = alpha
-					idCanh = j
-					d1Choosed = self.tapSensor[d1]
-					d2Choosed = self.tapSensor[d2]
-					d3Choosed = self.tapSensor[d3]
+					idChoosed = j
+					d1Choosed = self.SensorSet[d1]
+					d2Choosed = self.SensorSet[d2]
+					d3Choosed = self.SensorSet[d3]
 					id1 = d1
 					id2 = d2
 					id3 = d3
 
-			if idCanh == -1:
+			if idChoosed == -1:
 				continue
+			
 
-			e2 = self.tapSpanning[idCanh]
+			if Method.lessThan120(d1Choosed, d2Choosed, d3Choosed):
+				steinerP = Method.getSteinerPoint(d1Choosed, d2Choosed, d3Choosed)
 
-			if self.mt.lessThan120(d1Choosed, d2Choosed, d3Choosed):
-				steinerP = self.mt.diemSteiner(d1Choosed, d2Choosed, d3Choosed)
+				dst1 = steinerP.dist(d1Choosed)
+				dst2 = steinerP.dist(d2Choosed)
+				dst3 = steinerP.dist(d3Choosed)
 
-				kc1 = steinerP.khoangCach(d1Choosed)
-				kc2 = steinerP.khoangCach(d2Choosed)
-				kc3 = steinerP.khoangCach(d3Choosed)
-
-				if kc1 < 2 * self.R or kc2 < 2 * self.R or kc3 < 2 * self.R:
+				if dst1 < 2 * self.R or dst2 < 2 * self.R or dst3 < 2 * self.R:
 					continue
 
-				e1.isXoa = True
-				e2.isXoa = True
-				self.tapSensor.append(steinerP)
+				deleted[i] = True
+				deleted[idChoosed] = True
+				self.SensorSet.append(steinerP)
 
 
-				idSteiner = len(self.tapSensor) - 1
+				idSteiner = len(self.SensorSet) - 1
 
-				self.tapSpanning.append(Edge(id1, idSteiner, d1Choosed, steinerP, 0))
-				self.tapSpanning.append(Edge(id2, idSteiner, d2Choosed, steinerP, 0))
-				self.tapSpanning.append(Edge(id3, idSteiner, d3Choosed, steinerP, 0))
+				self.EdgeSet.append([id1, idSteiner])
+				self.EdgeSet.append([id2, idSteiner])
+				self.EdgeSet.append([id3, idSteiner])
 
-				self.tapRelay.append(steinerP)
+				deleted += [False] * 3
+
+				self.RelaySet.append(steinerP)
 		
-		for e in self.tapSpanning:
-			if not e.isXoa:
-				self.tapSteiner.append(e)
+		for i in range(len(self.EdgeSet)):
+			if not deleted[i]:
+				self.SteinerSet.append(self.EdgeSet[i])
 		
-		self.adj: list[DanhSachDinhKe] = [DanhSachDinhKe() for _ in range(len(self.tapSensor))]
+		self.AdjSet: list[list[int]] = [[] for _ in range(len(self.SensorSet))]
 
-		for e in self.tapSteiner:
-			self.addRelay(e.point1, e.point2)
-			self.adj[e.id1].push(e.id2)
-			self.adj[e.id2].push(e.id1)
-
-
-
-	def ghiFile(self, out):
-		with open(out, 'w') as f:
-			for p in self.tapRelay:
-				f.write(f"(x-{p.x:.3f})^2 +(y-{p.y:.3f})^2 = {self.R*self.R:.3f}\n")
-
-			for i in range(self.toaDoNum):
-				f.write(self.tapSensor[i].toDecimalString() + "\n")
-		
-		print("ADDED =", len(self.tapRelay))
+		for e in self.SteinerSet:
+			self.addRelay(self.SensorSet[e[0]], self.SensorSet[e[1]])
+			self.AdjSet[e[0]].append(e[1])
+			self.AdjSet[e[1]].append(e[0])		
 	
-	def datRelay(self, u):
-		if self.tapSensor[u].chuKy == -1:
+	def putRelay(self, u):
+		if self.SensorSet[u].cycle == -1:
 			return
 		
-		self.tapRelay.append(self.tapSensor[u])
+		self.RelaySet.append(self.SensorSet[u])
 
-		self.tapSensor[u].chuKy = -1
+		self.SensorSet[u].cycle = -1
 	
-	def truyVetBack(self, u):
+	def TraceBack(self, u):
 		v = u
-		ck = self.tapSensor[u].chuKy
+		cycle = self.SensorSet[u].cycle
 
-		if ck == -1:
+		if cycle == -1:
 			return
 		
-		while v != self.toaDoNum - 1:
-			v = self.truyVet[v]
+		while v != self.n - 1:
+			v = self.Trace[v]
 
-			if self.tapSensor[v].chuKy != ck:
-				self.datRelay(v)
+			if self.SensorSet[v].cycle != cycle:
+				self.putRelay(v)
 	
-	def dfs(self, u: int):
+	def DFS(self, u: int):
 		if self.visited[u]:
 			return
 		
 		self.visited[u] = True
 
-		self.truyVetBack(u)
+		self.TraceBack(u)
 
-		for i in range(self.adj[u].size()):
-			v = self.adj[u].get(i)
+		for i in range(len(self.AdjSet[u])):
+			v = self.AdjSet[u][i]
 			if not self.visited[v]:
-				self.truyVet[v] = u
-				self.dfs(v)
+				self.Trace[v] = u
+				self.DFS(v)
 		
-	def dfsMethod(self):
-		self.truyVet[self.toaDoNum-1] = -1
+	def DFSMethod(self):
+		self.Trace = [False] * len(self.SensorSet)
+		self.visited = [False] * len(self.SensorSet)
+		self.Trace[self.n-1] = -1
 
-		for i in range(len(self.tapSensor)):
-			self.visited[i] = False
-		
-		self.dfs(self.toaDoNum-1)
+		self.DFS(self.n-1)
+	
+	def solve(self):
+
+		self.Kruskal()
+		self.SteinerTree()
+		self.DFSMethod()
+
+	def export_data(self, out):
+		with open(out, 'w') as f:
+			for p in self.RelaySet:
+				f.write(f"(x-{p.x:.3f})^2 +(y-{p.y:.3f})^2 = {self.R*self.R:.3f}\n")
+
+			for i in range(self.n):
+				f.write(self.SensorSet[i].toDecimalString() + "\n")
 
 def main():
 	for i in range(1, 19):
 		print("Test-Case:", i)
-		starttime = timeit.default_timer()
 
-		x = Main()
 
 		path = cur_path + "/Testmip/Test" + str(i)
 
-		x.docFile(path + ".inp")
-		x.spanningTree()
-		x.steinerTree()
-		x.dfsMethod()
-		x.ghiFile(path + ".out")
+		W, L, R, Ss = import_data(path + ".inp")
 
+		solver = Solver(W, L, R, Ss)
+
+		starttime = timeit.default_timer()
+		solver.solve()
 		endtime = timeit.default_timer()
+
+		solver.export_data(path + ".out")
+
+		print("ADDED =", len(solver.RelaySet))
 
 		print("time =", endtime - starttime)
 

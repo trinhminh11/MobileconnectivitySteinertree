@@ -1,9 +1,9 @@
-from pack1.ToaDo import ToaDo
+from pack1.Point import Point
 
 class Cluster:
-	def __init__(self, center: ToaDo) -> None:
-		self.centroid = ToaDo(center)
-		self.pointOfCluster: list[ToaDo] = []
+	def __init__(self, center: Point) -> None:
+		self.centroid = Point(center)
+		self.pointOfCluster: list[Point] = []
 	
 	def add(self, diem):
 		self.pointOfCluster.append(diem)
@@ -14,15 +14,15 @@ class Cluster:
 		y = 0
 
 		for diem in self.pointOfCluster:
-			x += diem.getX()
-			y += diem.getY()
+			x += diem.x
+			y += diem.y
 		
 		pointCount = len(self.pointOfCluster)
 
 		x /= pointCount
 		y /= pointCount
 
-		return ToaDo(x, y)
+		return Point(x, y)
 
 	def getCentroid(self):
 		return self.centroid

@@ -1,32 +1,17 @@
-class ToaDo:
+class Point:
 	def __init__(self, *args) -> None:
 		self.x = self.y = 0
+
 		if len(args) == 1:
 			other = args[0]
-
-			self.init(other.getX(), other.getY())
-		
+			self.x = other.x
+			self.y = other.y
 		else:
 			ax, ay = args
-			self.init(ax, ay)
-	
-	def init(self, ax, ay):
-		self.setX(ax)
-		self.setY(ay)
-	
-	def getX(self):
-		return self.x
+			self.x = ax
+			self.y = ay
 
-	def getY(self):
-		return self.y
-	
-	def setX(self, ax):
-		self.x = ax
-
-	def setY(self, ay):
-		self.y = ay
-
-	def khoangCach(self, other):
+	def dist(self, other):
 		return (pow(self.x - other.x, 2) + pow(self.y - other.y, 2)) **.5
 	
 	def toDecimalString(self):

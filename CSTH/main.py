@@ -1,50 +1,92 @@
 from pack1 import *
-import pack1.ToaDoMethod as ToaDoMethod
+import pack1.Method as Method
 import os
 import timeit
 
 cur_path = os.path.dirname(__file__)
 
 
+def import_data(inp):
+	PointSet: list[Point] = []
 
-class Main:
-	fw = None 
-	N_MAX = 5000
+	with open(inp, 'r') as f:
 
-	numIter = 0
-	root = []
+		print("Input")
 
-	W, L = None, None
+		W, L = map(int, f.readline().split())
+		
+		BASE = Point(*map(int, f.readline().split()))
 
-	def __init__(self) -> None:
-		self.tapGiao1: list[Sensor] = []
-		self.tapSensor: list[ToaDo] = []
-		self.tapRelay: list[ToaDo] = []
+		carNum = int(f.readline())
 
-		self.tapEdge: list[Edge] = []
+		R = float(f.readline()) * 2
 
-		self.tapAdj: list[Adjacent] = []
+		periodNum = int(f.readline())
+		n = carNum * periodNum
 
-		self.radius = 0
-		self.n = 0
+		temp_Point = [Point(*map(float, f.readline().split())) for _ in range(n)]
+
+		temp_Point.append(BASE)
+
+		n += 1
+
+		for i in range(n):
+			isHave = False
+			for j in range(i):
+				if temp_Point[i] == temp_Point[j]:
+					isHave = True
+					break
+
+			if isHave:
+				continue
+
+			PointSet.append(temp_Point[i])
+		
+	return W, L, R, PointSet
+
+
+class Solver:
+	N_MAX = 5007
+
+	def __init__(self, W, L, R, PointSet: list[Point]) -> None:
+		self.W = W
+		self.L = L
+		self.R = R
+		self.n = len(PointSet)
+		self.PointSet = PointSet
+
+		self.IntersectSet: list[Sensor] = []
+		self.SensorSet: list[Point] = []
+		self.RelaySet: list[Point] = []
+
+		self.AdjSet: list[list[int]] = []
+
 		self.relayNum = 0
 
-		self.tapDiem: list[ToaDo] = [None] * self.N_MAX
 		self.mark = [[False for _ in range(self.N_MAX)] for _ in range(self.N_MAX)]
-		self.covered = [False] * self.N_MAX
+		self.covered = []
+
+		self.numIter = 0
+
+		self.out = ""
+
+		for i in range(self.n):
+			self.out += self.PointSet[i].toDecimalString() + "\n"
 	
-	def giaoDiem(self, p1: ToaDo, p2: ToaDo, radius, id):
-		x1, x2 = p1.getX(), p2.getX()
-		y1, y2 = p1.getY(), p2.getY()
+
+	# return 1 point intersect of 2 circle
+	def Intersect(self, p1: Point, p2: Point, radius, id):
+		x1, x2 = p1.x, p2.x
+		y1, y2 = p1.y, p2.y
 
 		xCenter = (x1 + x2)/2
 		yCenter = (y1 + y2)/2
-		distance = p1.khoangCach(p2)
+		distance = p1.dist(p2)
 
 		if y1 != y2:
-			heSo = (x1-x2) / (y2-y1)
-			xRes = xCenter + ( (radius * radius - distance * distance/4) / (1 + heSo * heSo) ) ** .5
-			yRes = heSo * (xRes - xCenter) + yCenter
+			v = (x1-x2) / (y2-y1)
+			xRes = xCenter + ( (radius * radius - distance * distance/4) / (1 + v * v) ) ** .5
+			yRes = v * (xRes - xCenter) + yCenter
 		else:
 			xRes = xCenter
 			yRes = yCenter + (radius * radius - distance * distance/4) **.5
@@ -53,60 +95,12 @@ class Main:
 			xRes = 2 * xCenter - xRes
 			yRes = 2 * yCenter - yRes
 		
-		return ToaDo(xRes, yRes)
-
-	def nhapDuLieu(self, inp, out):
-		self.fw = open(out, 'w')
-
-		with open(inp, 'r') as f:
-
-			print("Nhap")
-
-			self.W, self.L = map(int, f.readline().split())
-
-			for i in range(3000):
-				for j in range(3000):
-					self.mark[i][j] = False
-			
-			BASE = ToaDo(*map(int, f.readline().split()))
-
-			carNum = int(f.readline())
-
-			self.radius = float(f.readline()) * 2
-
-			periodNum = int(f.readline())
-			self.n = carNum * periodNum
-
-			for i in range(self.n):
-				self.tapDiem[i] = ToaDo(*map(float, f.readline().split()))
-
-			self.tapDiem[self.n] = BASE
-			self.n += 1
-
-			nFake = 0
-
-			tapDiemFake: list[ToaDo] = [None] * self.n
-
-			for i in range(self.n):
-				isHave = False
-				for j in range(i):
-					if self.tapDiem[i] == self.tapDiem[j]:
-						isHave = True
-						break
-				if isHave:
-					continue
-				tapDiemFake[nFake] = self.tapDiem[i]
-				nFake += 1
-			
-			self.n = nFake
-
-			for i in range(self.n):
-				self.tapDiem[i] = tapDiemFake[i]
+		return Point(xRes, yRes)
 		
 
-	def check(self, x, y, heso):
-		for i in range(heso):
-			for j in range(heso):
+	def check(self, x, y, v):
+		for i in range(v):
+			for j in range(v):
 				if self.mark[x+i][y+j]:
 					return False
 				if y-j >= 0 and self.mark[x+i][y-j]:
@@ -120,158 +114,153 @@ class Main:
 		
 		return True
 	
-	def timDiemGiao(self):
-		for i in range(self.n):
-			self.covered[i] = False
+	def findIntersection(self):
+		self.covered = [False] * self.n
 
 		for i in range(self.n):
 			for j in range(i+1, self.n):
-				p1 = self.tapDiem[i]
-				p2 = self.tapDiem[j]
+				p1 = self.PointSet[i]
+				p2 = self.PointSet[j]
 
-				if p1.khoangCach(p2) <= 2 * self.radius:
-					gd = self.giaoDiem(p1, p2, self.radius, 1)
+				if p1.dist(p2) <= 2 * self.R:
+					gd = self.Intersect(p1, p2, self.R, 1)
 					
 					roundX = round(gd.x)
 					roundY = round(gd.y)
 
-					if roundX >= 0 and roundY >= 0 and roundX <= self.W and roundY <= self.L and self.check(roundX, roundY, int(self.radius/20)):
-						self.tapGiao1.append(Sensor(gd, self.radius))
+					if roundX >= 0 and roundY >= 0 and roundX <= self.W and roundY <= self.L and self.check(roundX, roundY, int(self.R/20)):
+						self.IntersectSet.append(Sensor(gd, self.R))
 						self.mark[roundX][roundY] = True
 					
-					gd = self.giaoDiem(p1, p2, self.radius, 2)
+					gd = self.Intersect(p1, p2, self.R, 2)
 					roundX = round(gd.x)
 					roundY = round(gd.y)
 
-					if roundX >= 0 and roundY >= 0 and roundX <= self.W and roundY <= self.L and self.check(roundX, roundY, int(self.radius/20)):
+					if roundX >= 0 and roundY >= 0 and roundX <= self.W and roundY <= self.L and self.check(roundX, roundY, int(self.R/20)):
 
-						self.tapGiao1.append(Sensor(gd, self.radius))
+						self.IntersectSet.append(Sensor(gd, self.R))
 						self.mark[roundX][roundY] = True
 		
-		for i in range(len(self.tapGiao1)):
+		for i in range(len(self.IntersectSet)):
 			for j in range(self.n):
-				if self.tapGiao1[i].isCover(self.tapDiem[j]):
-					self.tapGiao1[i].add(j)
+				if self.IntersectSet[i].isCover(self.PointSet[j]):
+					self.IntersectSet[i].add(j)
 	
-	def sapXep(self):
-		self.tapGiao1.sort(key= lambda x: x.getTargetCount(), reverse= True)
+	def sortingIntersect(self):
+		self.IntersectSet.sort(key= lambda x: x.getTargetCount(), reverse= True)
 
-	def bapPhu(self):
-		self.sapXep()
+	def cover(self):
+		self.sortingIntersect()
 
 		while True:
 			coverMax = float('-inf')
-			dGiaoMax = Sensor(ToaDo(0, 0), self.radius)
+			choosed = Sensor(Point(0, 0), self.R)
 
-			for dGiao in self.tapGiao1:
-				if dGiao.getTargetCount() > coverMax:
-					coverMax = dGiao.getTargetCount()
-					dGiaoMax = dGiao
-
+			for point in self.IntersectSet:
+				if point.getTargetCount() > coverMax:
+					coverMax = point.getTargetCount()
+					choosed = point
 
 			if coverMax <= 0:
 				break
+			
+			self.out += choosed.toCircle() + "\n"
+			self.SensorSet.append(Point(choosed.center))
 
-			self.fw.write(dGiaoMax.toCircle() + "\n")
-			self.tapSensor.append(ToaDo(dGiaoMax.center))
+			targetList = choosed.returnList()
+			targetListCount = choosed.getTargetCount()
 
-			targetList = dGiaoMax.returnList()
-			targetListCount = dGiaoMax.getTargetCount()
-
-			for dGiao in self.tapGiao1:
+			for point in self.IntersectSet:
 				for i in range(targetListCount):
-					dGiao.remove(targetList[i])
+					point.remove(targetList[i])
 					self.covered[targetList[i]] = True
 			
 
 		for i in range(self.n):
 			if not self.covered[i]:
-				s = Sensor(self.tapDiem[i], self.radius)
-				self.fw.write(s.toCircle() + "\n")
-				self.tapSensor.append(ToaDo(s.center))
+				s = Sensor(self.PointSet[i], self.R)
+				self.out += s.toCircle() + "\n"
+				self.SensorSet.append(Point(s.center))
 		
-		self.relayNum = len(self.tapSensor)
+		self.relayNum = len(self.SensorSet)
 
-	
-	def inDuLieu(self):
-		for i in range(self.n):
-			self.fw.write(self.tapDiem[i].toDecimalString() + "\n")
-	
-	def sortEdge(self):
-		self.tapEdge.sort(key= lambda x: x.getLength())
+	def addRelay(self, d1: Point, d2: Point):
+		bkR = self.R/2
 
-	def getRoot(self, x):
-		if self.root[x] == x:
-			return x
-		else:
-			self.root[x] = self.getRoot(self.root[x])
-			return self.root[x]
-	
-
-	def addRelay(self, d1: ToaDo, d2: ToaDo):
-		bkR = self.radius/2
-
-		if d1.khoangCach(d2) <= 2*bkR:
+		if d1.dist(d2) <= 2*bkR:
 			return
 		
-		d3 = ToaDo(0, 0)
+		d3 = Point(0, 0)
 
-		kCach = d1.khoangCach(d2)
+		kCach = d1.dist(d2)
 
-		deltaX = 2 * bkR * abs(d2.getX() - d1.getX()) /  kCach
-		deltaY = 2 * bkR * abs(d2.getY() - d1.getY()) /  kCach
+		deltaX = 2 * bkR * abs(d2.x - d1.x) /  kCach
+		deltaY = 2 * bkR * abs(d2.y - d1.y) /  kCach
 
-		if d1.getX() < d2.getX():
-			d3.setX(d1.getX() + deltaX)
+		if d1.x < d2.x:
+			d3.x = (d1.x + deltaX)
 		else:
-			d3.setX(d1.getX() - deltaX)
+			d3.x = (d1.x - deltaX)
 		
-		if d1.getY() < d2.getY():
-			d3.setY(d1.getY() + deltaY)
+		if d1.y < d2.y:
+			d3.y = (d1.y + deltaY)
 		else:
-			d3.setY(d1.getY() - deltaY)
+			d3.y = (d1.y - deltaY)
 
-		self.tapRelay.append(d3)
-		ss = Sensor(d3, self.radius)
+		self.RelaySet.append(d3)
+		ss = Sensor(d3, self.R)
 
-
-		self.fw.write(ss.toCircle() + "\n")
+		self.out += ss.toCircle() + "\n"
 		
 		self.relayNum += 1
 		self.addRelay(d3, d2)
 	
-	def kruskal(self):
-		n = len(self.tapSensor)
+	def Kruskal(self):
+		n = len(self.SensorSet)
+		EdgeSet: list[list[int]] = []
 		for i in range(n):
 			for j in range(i+1 , n):
-				self.tapEdge.append(Edge(i, j, self.tapSensor[i].khoangCach(self.tapSensor[j])))
+				EdgeSet.append([i, j, self.SensorSet[i].dist(self.SensorSet[j])])
 		
-		self.sortEdge()
+		EdgeSet.sort(key= lambda x: x[2])
 
-		self.root = [i for i in range(n)]
+		root = [i for i in range(n)]
 
-		self.tapAdj = [Adjacent() for _ in range(n)]
+		def getRoot(x):
+			if root[x] == x:
+				return x
+			else:
+				root[x] = getRoot(root[x])
+				return root[x]
 
-		for e in self.tapEdge:
-			v1 = e.id1
-			v2 = e.id2
-			p = self.getRoot(v1)
-			q = self.getRoot(v2)
+		self.AdjSet = [[] for _ in range(n)]
+
+
+		for e in EdgeSet:
+			v1 = e[0]
+			v2 = e[1]
+			p = getRoot(v1)
+			q = getRoot(v2)
 			if p == q:
 				continue
 
-			self.root[p] = q
-			self.tapAdj[v1].addDinhKe(v2)
-			self.tapAdj[v2].addDinhKe(v1)
+			root[p] = q
+			self.AdjSet[v1].append(v2)
+			self.AdjSet[v2].append(v1)
 
-	def steiner(self):
+	def SteinerTree(self):
 		self.numIter = 0
 
-		self.radius = self.radius/2
+		self.R = self.R/2
 
-		print("R =", self.radius)
+		root = [i for i in range(len(self.SensorSet))]
 
-		self.root = [i for i in range(len(self.tapSensor))]
+		def getRoot(x):
+			if root[x] == x:
+				return x
+			else:
+				root[x] = getRoot(root[x])
+				return root[x]
 
 		while True:
 			maxGain = -1
@@ -279,18 +268,18 @@ class Main:
 			iSaved = -1
 			vSaved = -1
 
-			for i in range(len(self.tapSensor)):
-				for iu in range(len(self.tapAdj[i].tapDinhKe)):
-					for iv in range(iu+1, len(self.tapAdj[i].tapDinhKe)):
-						u = self.tapAdj[i].tapDinhKe[iu]
-						v = self.tapAdj[i].tapDinhKe[iv]
+			for i in range(len(self.SensorSet)):
+				for iu in range(len(self.AdjSet[i])):
+					for iv in range(iu+1, len(self.AdjSet[i])):
+						u = self.AdjSet[i][iu]
+						v = self.AdjSet[i][iv]
 
-						p1 = self.tapSensor[i]
-						p2 = self.tapSensor[u]
-						p3 = self.tapSensor[v]
+						p1 = self.SensorSet[i]
+						p2 = self.SensorSet[u]
+						p3 = self.SensorSet[v]
 
 
-						gain = ToaDoMethod.gain(p1, p2, p3, self.radius)
+						gain = Method.gain(p1, p2, p3, self.R)
 
 
 						if gain > 0 and gain > maxGain:
@@ -301,154 +290,84 @@ class Main:
 
 			if maxGain > 1:
 				self.numIter += 1
-				p1 = self.tapSensor[iSaved]
-				p2 = self.tapSensor[uSaved]
-				p3 = self.tapSensor[vSaved]
+				p1 = self.SensorSet[iSaved]
+				p2 = self.SensorSet[uSaved]
+				p3 = self.SensorSet[vSaved]
 
-				self.tapSensor.append(ToaDoMethod.getSteinerPoint(p1, p2, p3))
-				stp = len(self.tapSensor) - 1
+				self.SensorSet.append(Method.getSteinerPoint(p1, p2, p3))
+				stp = len(self.SensorSet) - 1
 
+				self.AdjSet.append([])
 
-				self.tapAdj.append(Adjacent())
-
-				ss = Sensor(self.tapSensor[stp], self.radius)
-				self.fw.write(ss.toCircle() + "\n")
+				ss = Sensor(self.SensorSet[stp], self.R)
+				self.out += ss.toCircle() + "\n"
 				self.relayNum += 1
 
-				ri = self.getRoot(iSaved)
-				ru = self.getRoot(uSaved)
-				rv = self.getRoot(vSaved)
+				ri = getRoot(iSaved)
+				ru = getRoot(uSaved)
+				rv = getRoot(vSaved)
 
-				self.root[ru] = self.root[rv] = ri
+				root[ru] = root[rv] = ri
 
-				self.tapAdj[iSaved].deleteDinhKe(uSaved)
-				self.tapAdj[iSaved].deleteDinhKe(vSaved)
-				self.tapAdj[uSaved].deleteDinhKe(iSaved)
-				self.tapAdj[vSaved].deleteDinhKe(iSaved)
+				self.AdjSet[iSaved].remove(uSaved)
+				self.AdjSet[iSaved].remove(vSaved)
+				self.AdjSet[uSaved].remove(iSaved)
+				self.AdjSet[vSaved].remove(iSaved)
 
-				self.tapAdj[iSaved].addDinhKe(stp)
-				self.tapAdj[uSaved].addDinhKe(stp)
-				self.tapAdj[vSaved].addDinhKe(stp)
+				self.AdjSet[iSaved].append(stp)
+				self.AdjSet[uSaved].append(stp)
+				self.AdjSet[vSaved].append(stp)
 
-				self.tapAdj[stp].addDinhKe(iSaved)
-				self.tapAdj[stp].addDinhKe(uSaved)
-				self.tapAdj[stp].addDinhKe(vSaved)
+				self.AdjSet[stp].append(iSaved)
+				self.AdjSet[stp].append(uSaved)
+				self.AdjSet[stp].append(vSaved)
 			
 			else:
 				break 
 		
-		self.radius *= 2
-		for i in range(len(self.tapSensor)):
-			for j in self.tapAdj[i].tapDinhKe:
+		self.R *= 2
+		for i in range(len(self.SensorSet)):
+			for j in self.AdjSet[i]:
 				if i < j:
-					self.addRelay(self.tapSensor[i], self.tapSensor[j])
+					self.addRelay(self.SensorSet[i], self.SensorSet[j])
 		
-		self.radius /= 2
+		self.R /= 2
+	
 
-
-
-	def xuat(self):
-		print("Number iter of Steiner =", self.numIter)
-
-
-	def checkIsConnected(self, Graph: list[list[int]], Redudant: list[int]):
-		i = 0
-		numVertex = self.relayNum
-		listVS = []
-		visited = [False]*numVertex
-		stack = []
-		listVS.append(i)
-		stack.append(i)
-		while stack:
-			i = stack[-1]
-			count = 0
-
-			for j in range(numVertex):
-				if j not in Redudant:
-					if Graph[i][j] > 0 and not visited[j]:
-						visited[j] = True
-						listVS.append(j)
-						stack.append(j)
-						break
-					else:
-						count += 1
-				else:
-					count += 1
-			if count == numVertex:
-				stack.pop()
+	def solve(self):
+		for i in range(self.n):
+			self.out += self.PointSet[i].toDecimalString() + "\n"
 		
+		self.findIntersection()
 
-		for k in range(numVertex):
-			if not visited[k] and k not in Redudant:
-				return False
-		
-		return True
+		self.cover()
 
-	def redudantRelay(self):
-		Graph = [[0 for _ in range(self.relayNum)] for _ in range(self.relayNum)]
+		self.Kruskal()
 
-		allRelay: list[ToaDo] = self.tapSensor + self.tapRelay
-
-		for i in range(len(allRelay)):
-			for j in range(i+1, len(allRelay)):
-				if allRelay[i].khoangCach(allRelay[j]) <= 2 * self.radius + 0.001:
-					Graph[i][j] = Graph[j][i] = 1
-		
-		Redudant = []
-
-		for i in range(len(self.tapRelay)):
-			print(i)
-			Redudant.append(i)
-
-			if not self.checkIsConnected(Graph, Redudant):
-				Redudant.pop()
-
-		for e in self.tapRelay:
-			allRelay.remove(e)
-		
-		tapRemove: list[ToaDo] = []
-
-		for i in Redudant:
-			tapRemove.append(self.tapRelay[i])
-		
-		for e in tapRemove:
-			self.tapRelay.remove(e)
-
-		allRelay += self.tapRelay
-		
-		
-		self.relayNum = len(allRelay)
-
+		self.SteinerTree()
+	
+	def export_data(self, out):
+		with open(out, 'w') as f:
+			f.write(self.out)
 
 def main():
 	for i in range(1, 19):
 		print("Test-Case:", i)
-		x = Main()
 		path = cur_path + "/Testnew/" + str(i)
-		x.nhapDuLieu(path+".inp", path+".out")
+		W, L, R, Ps = import_data(path+".inp")
+		solver = Solver(W, L, R, Ps)
+
 		starttime = timeit.default_timer()
-
-		x.inDuLieu()
-		x.timDiemGiao()
-		x.bapPhu()
-
-
-
-		x.kruskal()
-
-		x.steiner()
-
-		# x.redudantRelay()
-
-		x.fw.close()
-
+		solver.solve()
 		endtime = timeit.default_timer()
 
-		print(x.relayNum, "relay added")
-		print("Time =:", endtime - starttime)
-		x.xuat()
+		solver.export_data(path + ".out")
+
+
+		print("Added =", solver.relayNum)
+		print("Time =", endtime - starttime)
+		print("Number iter of Steiner =", solver.numIter)
 		print("-------------------")
-	
 
 if __name__ == "__main__":
 	main()
