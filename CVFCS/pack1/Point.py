@@ -5,19 +5,23 @@ class Point:
 			other = args[0]
 			self.x = other.x
 			self.y = other.y
-			self.cycle = -1
+			self.t = -1
+			self.visited = True
 		
 		elif len(args) == 2:
 			x, y = args
 			self.x = x
 			self.y = y
-			self.cycle = -1
+			self.t = -1
+			self.visited = True
 			
 		elif len(args) == 3:
-			x, y, cycle = args
+			x, y, t = args
 			self.x = x
 			self.y = y
-			self.cycle = cycle
+			self.t = t
+			self.visited = False
+		
 	
 	def __eq__(self, other) -> bool:
 		return abs(self.x-other.x) < self.EPS and abs(self.y - other.y) < self.EPS

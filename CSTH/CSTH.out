@@ -1,0 +1,90 @@
+Test-Case: 1
+ADDED = 436
+Total, Max, Delta Energy: 6.2499, 0.1017, 0.1017
+time = 0.4840112510000836
+------------------------
+Test-Case: 2
+ADDED = 543
+Total, Max, Delta Energy: 13.8942, 0.2022, 0.2022
+time = 0.9779702610003369
+------------------------
+Test-Case: 3
+ADDED = 622
+Total, Max, Delta Energy: 21.2581, 0.2668, 0.2668
+time = 1.613191974000074
+------------------------
+Test-Case: 4
+ADDED = 703
+Total, Max, Delta Energy: 15.8025, 0.3404, 0.3404
+time = 2.3098778839998886
+------------------------
+Test-Case: 5
+ADDED = 751
+Total, Max, Delta Energy: 24.752, 0.4101, 0.4101
+time = 3.167938733000028
+------------------------
+Test-Case: 6
+ADDED = 804
+Total, Max, Delta Energy: 22.2021, 0.4787, 0.4787
+time = 4.234573046999685
+------------------------
+Test-Case: 7
+ADDED = 890
+Total, Max, Delta Energy: 34.0704, 0.4792, 0.4792
+time = 5.451835241000026
+------------------------
+Test-Case: 8
+ADDED = 916
+Total, Max, Delta Energy: 54.5964, 0.6163, 0.6163
+time = 6.657421368999621
+------------------------
+Test-Case: 9
+ADDED = 983
+Total, Max, Delta Energy: 63.0775, 0.6826, 0.6826
+time = 8.058663134000199
+------------------------
+Test-Case: 10
+ADDED = 1036
+Total, Max, Delta Energy: 62.496, 0.7283, 0.7283
+time = 9.757688729000165
+------------------------
+Test-Case: 11
+ADDED = 1086
+Total, Max, Delta Energy: 52.3805, 0.4627, 0.4627
+time = 11.488918947000002
+------------------------
+Test-Case: 12
+ADDED = 2930
+Total, Max, Delta Energy: 118.4244, 0.5159, 0.5159
+time = 14.864953538999998
+------------------------
+Test-Case: 13
+ADDED = 1945
+Total, Max, Delta Energy: 80.1839, 0.5494, 0.5494
+time = 11.01124402000005
+------------------------
+Test-Case: 14
+ADDED = 1466
+Total, Max, Delta Energy: 69.5871, 0.5832, 0.5832
+time = 9.437189439999656
+------------------------
+Test-Case: 15
+ADDED = 1139
+Total, Max, Delta Energy: 44.4596, 0.6263, 0.6263
+time = 8.454425180000271
+------------------------
+Test-Case: 16
+ADDED = 975
+Total, Max, Delta Energy: 46.415, 0.6575, 0.6575
+time = 8.008841971000038
+------------------------
+Test-Case: 17
+ADDED = 593
+Total, Max, Delta Energy: 27.2532, 0.4086, 0.4086
+time = 7.513619087000279
+------------------------
+Test-Case: 18
+ADDED = 731
+Total, Max, Delta Energy: 56.138, 0.6647, 0.6647
+time = 7.630163874000118
+------------------------

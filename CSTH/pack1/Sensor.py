@@ -1,11 +1,11 @@
 from pack1.Point import Point
 
 class Sensor:
-	def __init__(self, tam: Point, rad) -> None:
+	def __init__(self, center: Point, rad) -> None:
 		self.center: Point = None
 		self.targetCovered = []
 
-		self.setCenter(tam)
+		self.setCenter(center)
 		self.R = rad
 
 	def setCenter(self, center: Point):

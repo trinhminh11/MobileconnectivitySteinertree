@@ -5,10 +5,17 @@ class Point:
 			other = args[0]
 			self.x = other.x
 			self.y = other.y
-		else:
+			
+		elif len(args) == 2:
 			x, y = args
 			self.x = x
 			self.y = y
+		
+		elif len(args) == 3:
+			x, y, t = args
+			self.x = x
+			self.y = y
+			self.t: int = t
 	
 	def __eq__(self, other) -> bool:
 		EPS = 1e-10

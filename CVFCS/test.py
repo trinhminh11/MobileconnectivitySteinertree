@@ -26,19 +26,39 @@ def import_data(inp):
 		
 		SensorSet.append(BASE)
 
-	return W, L, R, SensorSet
+	return W, L, R, SensorSet, periodNum
+
+class Node:
+	def __init__(self, id) -> None:
+		self.id = id
+		self.parent: Node = None
+		self.children: list[Node] = []
+	
+	def search_parent(self, lst: list):
+		lst.append(self.id)
+		if self.parent:
+			self.parent.search_parent(lst)
+
+class Tree:
+	def __init__(self, root = None, size = 0) -> None:
+		self.root = root
+		self.size = size
+	
 
 class Solver:
 	N_MAX = 5007
-	def __init__(self, W, L, R, SensorSet) -> None:
+	def __init__(self, W, L, R, SensorSet, period_num) -> None:
 		self.W = W
 		self.L = L
 		self.R = R
 		self.n = len(SensorSet)
+		self.period_num = period_num
 		self.SensorSet: list[Point] = SensorSet
 		self.RelaySet: list[Point] = []
 		self.EdgeSet: list[Edge] = []
 		self.SteinerSet: list[Edge] = []
+
+		self.PointSet = self.SensorSet.copy()
 
 	def Kruskal(self):
 		root = [i for i in range(self.n)]
@@ -204,24 +224,24 @@ class Solver:
 			self.AdjSet[e[1]].append(e[0])		
 	
 	def putRelay(self, u):
-		if self.SensorSet[u].cycle == -1:
+		if self.SensorSet[u].visited:
 			return
 		
 		self.RelaySet.append(self.SensorSet[u])
 
-		self.SensorSet[u].cycle = -1
+		self.SensorSet[u].visited = True
 	
 	def TraceBack(self, u):
 		v = u
-		cycle = self.SensorSet[u].cycle
+		t = self.SensorSet[u].t
 
-		if cycle == -1:
+		if self.SensorSet[u].visited:
 			return
 		
 		while v != self.n - 1:
 			v = self.Trace[v]
 
-			if self.SensorSet[v].cycle != cycle:
+			if self.SensorSet[v].t != t:
 				self.putRelay(v)
 	
 	def DFS(self, u: int):
@@ -245,11 +265,308 @@ class Solver:
 
 		self.DFS(self.n-1)
 	
-	def solve(self):
+	# Minh Trinh
+	def calcEnergy(self):
+		Sensors = self.PointSet[:-1]
+		Relays = self.RelaySet
+		Base = self.PointSet[-1]
 
+		n = len(Sensors)
+
+		m = len(Relays)
+
+		Nodes = Sensors + Relays + [Base]
+
+		EPS = 10e-9
+
+
+
+		b = len(Nodes) - 1
+		
+		Adj: list[dict[int, list]] = [{} for _ in range(self.period_num)]
+
+		def AddAdj(t: int, i, j):
+			if i not in Adj[t].keys():
+				Adj[t][i] = []
+			
+			if j not in Adj[t].keys():
+				Adj[t][j] = []
+
+			Adj[t][i].append(j)
+			Adj[t][j].append(i)
+
+		for i in range(n):
+			# create Adj from Sensor and Relay
+			for j in range(m):
+				if Sensors[i].dist(Relays[j]) <= 2 * self.R + EPS:
+					AddAdj(Sensors[i].t, i, j+n)
+			
+			# create Adj from Sensor to base:
+			if Sensors[i].dist(Base) <= 2 * self.R + EPS:
+				AddAdj(Sensors[i].t, i, b)
+
+
+			# create Adj from 2 Sensors
+
+			for j in range(i+1, n):
+				if Sensors[i].t == Sensors[j].t and Sensors[i].dist(Sensors[j]) <= 2 * self.R + EPS:
+					AddAdj(Sensors[i].t, i, j)
+
+			
+		
+
+		for i in range(m):
+			# create Adj from Relay to Base
+			if Relays[i].dist(Base) <= 2 * self.R + EPS:
+				for t in range(self.period_num):
+					AddAdj(t, i+n, b)
+			
+
+			# create Adj from Relay to Relay
+			for j in range(i+1, m):
+				if i == j:
+					continue
+
+				if Relays[i].dist(Relays[j]) <= 2 * self.R + EPS:
+					for t in range(self.period_num):
+						AddAdj(t, i+n, j+n)
+		
+			
+		def Dijkstra(t, start = b):
+			dst = [float('inf')] * len(Nodes)
+			prev = [None] * len(Nodes)
+
+			dst[start] = 0
+
+			Q = [i for i in range(len(Nodes))]
+
+			while Q:
+				u = 0
+				min_dst = float('inf')
+				
+				for v in Q:
+					if dst[v] < min_dst:
+						u = v
+						min_dst = dst[v]
+
+				if min_dst == float('inf'):
+					break
+
+				Q.remove(u)
+
+				for v in Adj[t][u]:
+					if v in Q:
+						alt = dst[u] + Nodes[u].dist(Nodes[v])
+
+						if alt < dst[v]:
+							dst[v] = alt
+							prev[v] = u
+			return prev
+
+		prevs = []
+		for t in range(self.period_num):
+			
+			prevs.append(Dijkstra(t))
+
+
+
+		data = [[0, 0, 0] for _ in range(len(Nodes)-1)]
+
+		for i in range(n):
+			path = []
+			current = i
+
+			while current != None:
+				path.append(current)
+				current = prevs[Sensors[i].t][current]
+			
+			path.reverse()
+
+			data[i][0] += 1
+			data[i][2] = 0
+
+			for node_idx in path[1:-1]:
+				data[node_idx][0] += 1
+				data[node_idx][1] += 1
+
+		
+		def energy(no_receive, no_transmit, R):
+			E_elec = 50*1e-9
+			E_freespace = 10*1e-12
+			K = 525*8
+			return no_receive*(E_elec)*K + no_transmit*(K*E_elec + K*E_freespace*R*R)
+
+
+		total_E = 0
+		max_E = float('-inf')
+		min_E = float('inf')
+
+		for values in data:
+			no_receive, no_transmit = values
+
+			energy_consumption = energy(no_receive, no_transmit, self.R)
+
+			total_E += energy_consumption
+
+			if energy_consumption > max_E:
+				max_E = energy_consumption
+			
+			if energy_consumption < min_E:
+				min_E = energy_consumption
+
+		return total_E, max_E, max_E - min_E
+
+	
+	def calcEnergy2(self):
+		Sensors = self.PointSet[:-1]
+		Relays = self.RelaySet
+		Base = self.PointSet[-1]
+
+		n = len(Sensors)
+
+		m = len(Relays)
+
+		Nodes = Sensors + Relays + [Base]
+
+		EPS = 10e-9
+		b = len(Nodes) - 1
+		
+		Edges: list[list[list]] = [[] for _ in range(self.period_num)]
+
+
+		for i in range(n):
+			t = Sensors[i].t
+			# create Edge from Sensor and Sensor
+			for j in range(i+1, n):
+				if t == Sensors[j].t and Sensors[i].dist(Sensors[j]) <= 2 * self.R + EPS:
+					Edges[t].append([i, j, Sensors[i].dist(Sensors[j])])
+			
+			# create Edge from Sensor to Relay
+			for j in range(m):
+				if Sensors[i].dist(Relays[j]) <= 2 * self.R + EPS:
+					Edges[t].append([i, j+n, Sensors[i].dist(Relays[j])])
+			
+			# create Edge from Sensor to Base
+			if Sensors[i].dist(Base) <= 2 * self.R + EPS:
+				Edges[t].append([i, b, Sensors[i].dist(Base)])
+		
+		for i in range(m):
+
+			for j in range(i+1, m):
+				dst = Relays[i].dist(Relays[j])
+				if dst <= 2 * self.R + EPS:
+					for t in range(self.period_num):
+						Edges[t].append([i+n, j+n, dst])
+			
+			dst = Relays[i].dist(Base)
+			if dst <= 2 * self.R + EPS:
+				for t in range(self.period_num):
+					Edges[t].append([i+n, b, dst])
+
+		def Kruskal(t):
+			root = [i for i in range(len(Nodes))]
+
+			E = Edges[t].copy()
+
+			def getRoot(x):
+				if root[x] == x:
+					return x
+				else:
+					root[x] = getRoot(root[x])
+					return root[x]
+
+			E.sort(key= lambda x: x[2])
+
+			SpanningEdges: dict[int, list] = {e: [] for e in range(len(Nodes))}
+
+			for e in E:
+				p = getRoot(e[0])
+				q = getRoot(e[1])
+
+				if p == q:
+					continue
+
+				root[p] = q
+
+				SpanningEdges[e[0]].append(e[1])
+				SpanningEdges[e[1]].append(e[0])
+
+			root = Node(b)
+
+			stack = [root]
+			visited = [False] * len(Nodes)
+			visited[b] = True
+
+			Sensor_nodes: list[Node] = []
+
+			while stack:
+				current = stack.pop()
+				if current.id < len(Sensors):
+					Sensor_nodes.append(current)
+				for v in SpanningEdges[current.id]:
+					if not visited[v]:
+						node = Node(v)
+						current.children.append(node)
+						node.parent = current
+						stack.append(node)
+						visited[v] = True
+				
+		
+			return Sensor_nodes
+
+		data = [[0, 0] for _ in range(len(Nodes)-1)]
+
+		for t in range(self.period_num):
+			Sensor_nodes = Kruskal(t)
+
+			for S in Sensor_nodes:
+				path: list[int] = []
+				S.search_parent(path)
+
+				data[path[0]][0] += 1
+
+
+				for i in range(1, len(path)-1):
+					node_idx = path[i]
+					data[node_idx][0] += 1
+					data[node_idx][1] += 1
+		
+		def energy(no_transmit, no_receive, R):
+			E_elec = 50*1e-9
+			E_freespace = 10*1e-12
+			K = 525*8
+			return no_receive*(E_elec)*K + no_transmit*(K*E_elec + K*E_freespace*R*R)
+
+
+		total_E = 0
+		max_E = float('-inf')
+		min_E = float('inf')
+		
+
+		for values in data:
+			no_transmit, no_receive = values
+
+			energy_consumption = energy(no_transmit, no_receive, self.R)
+
+			total_E += energy_consumption
+
+			if energy_consumption > max_E:
+				max_E = energy_consumption
+			
+			if energy_consumption < min_E:
+				min_E = energy_consumption
+		
+
+		return total_E, max_E, max_E - min_E
+			
+	
+	def solve(self):
 		self.Kruskal()
 		self.SteinerTree()
 		self.DFSMethod()
+
+		self.total_E, self.max_E, self.delta_E = map(round, self.calcEnergy2(), [4]*3)
+		# self.total_E, self.max_E, self.delta_E = self.calcEnergy() 	
 
 	def export_data(self, out):
 		with open(out, 'w') as f:
@@ -263,12 +580,11 @@ def main():
 	for i in range(1, 19):
 		print("Test-Case:", i)
 
+		path = cur_path + "/Testnew/" + str(i)
 
-		path = cur_path + "/Testmip/Test" + str(i)
+		W, L, R, Ss, p_num = import_data(path + ".inp")
 
-		W, L, R, Ss = import_data(path + ".inp")
-
-		solver = Solver(W, L, R, Ss)
+		solver = Solver(W, L, R, Ss, p_num)
 
 		starttime = timeit.default_timer()
 		solver.solve()
@@ -278,11 +594,13 @@ def main():
 
 		print("ADDED =", len(solver.RelaySet))
 
+		print(f"Total, Max, Delta Energy: {solver.total_E}, {solver.max_E}, {solver.delta_E}")
+
 		print("time =", endtime - starttime)
 
 		print("------------------------")
 
 
-
 if __name__ == "__main__":
 	main()
+
