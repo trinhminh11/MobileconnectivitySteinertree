@@ -410,7 +410,7 @@ def main():
 
 		starttime = timeit.default_timer()
 
-		path = cur_path + "/Testnew/" + str(i)
+		path = cur_path + "/Testmip/Test" + str(i)
 		nodes, R, period_num = import_data(path + ".inp")
 		R *= 2
 		solver = Solver(nodes, R, period_num)

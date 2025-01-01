@@ -1,4 +1,4 @@
-from pack1 import *
+from pack1 import Edge, Point
 import pack1.Method as Method
 import os
 import timeit
@@ -442,6 +442,7 @@ def main():
 		solver.export_data(path + ".out")
 
 		print("ADDED =", len(solver.RelaySet))
+		print("Testing =", len(solver.SteinerSet))
 
 		print(f"Total, Max, Delta Energy: {solver.total_E}, {solver.max_E}, {solver.delta_E}")
 
